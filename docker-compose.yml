@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL for User and Order services
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: orbit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d orbit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for Inventory (Catalog) service
+  mongo:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  # Redis for caching in Inventory service
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # RabbitMQ for asynchronous messaging between Order, Payment, and Inventory
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Web UI port
+
+volumes:
+  postgres-data:
+  mongo-data:
