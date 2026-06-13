@@ -22,4 +22,10 @@ router.use('/api/inventory/secure', authenticateToken, createProxyMiddleware({
   pathRewrite: { '^/api/inventory/secure': '' },
 }));
 
+router.use('/api/orders', authenticateToken, createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  // No pathRewrite needed because Order Service is listening on /api/orders
+}));
+
 module.exports = router;
