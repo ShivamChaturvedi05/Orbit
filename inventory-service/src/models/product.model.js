@@ -21,6 +21,10 @@ const productSchema = new mongoose.Schema({
   embedding: {
     type: [Number],
     required: false,
+  },
+  stockQuantity: {
+    type: Number,
+    default: 100, // We will just pretend every item has 100 units in stock for now
   }
 }, { timestamps: true });
 
