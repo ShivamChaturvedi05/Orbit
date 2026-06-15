@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, User } from 'lucide-react';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
+  const { isAuthenticated, logout } = useContext(AuthContext);
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-card mx-4 mt-4 px-6 py-4 flex items-center justify-between">
       {/* Logo */}
@@ -21,12 +24,19 @@ const Navbar = () => {
         <button className="hover:scale-110 transition-transform">
           <Search size={20} strokeWidth={2.5} />
         </button>
-        <button className="hover:scale-110 transition-transform">
-          <User size={20} strokeWidth={2.5} />
-        </button>
+        
+        {isAuthenticated ? (
+          <button onClick={logout} className="text-sm font-medium hover:text-red-500 transition-colors">
+            Log Out
+          </button>
+        ) : (
+          <Link to="/login" className="hover:scale-110 transition-transform">
+            <User size={20} strokeWidth={2.5} />
+          </Link>
+        )}
+
         <button className="hover:scale-110 transition-transform relative">
           <ShoppingBag size={20} strokeWidth={2.5} />
-          {/* Placeholder for Cart Badge */}
           <span className="absolute -top-1 -right-1 bg-apple-blue text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
             0
           </span>
