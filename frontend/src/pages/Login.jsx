@@ -23,8 +23,10 @@ const Login = () => {
       // If successful, save the JWT token globally
       login(res.data.token, res.data.userId);
       
-      // Redirect to the home page
-      navigate('/');
+      // Smart Redirection logic: Check if there is a 'redirect' in the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect') || '/';
+      navigate(redirectUrl);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Check your credentials.');
     } finally {

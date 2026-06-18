@@ -1,13 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const { isAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  // Load all products when the page first opens!
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      try {
+        const res = await axios.get('http://localhost:3000/api/inventory/public/');
+        setResults(res.data);
+      } catch (err) {
+        console.error("Failed to load initial products");
+      }
+    };
+    fetchAllProducts();
+  }, []);
+
+  const handleBuyClick = (productId) => {
+    // Smart Redirection: If logged out, force login but remember where they wanted to go!
+    if (isAuthenticated) {
+      navigate(`/checkout/${productId}`);
+    } else {
+      navigate(`/login?redirect=/checkout/${productId}`);
+    }
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -90,12 +116,12 @@ const Home = () => {
                 
                 <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-100/50">
                   <div className="text-3xl font-bold tracking-tight">${item.price}</div>
-                  <Link 
-                    to={`/checkout/${item._id}`}
+                  <button 
+                    onClick={() => handleBuyClick(item._id)}
                     className="flex items-center text-apple-blue font-semibold hover:text-blue-700 transition-colors group bg-apple-blue/10 px-4 py-2 rounded-full"
                   >
                     Buy Now <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  </button>
                 </div>
               </div>
 

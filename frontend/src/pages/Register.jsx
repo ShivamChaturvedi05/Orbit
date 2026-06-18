@@ -23,8 +23,10 @@ const Register = () => {
       // 2. Automatically log them in globally
       login(res.data.token, res.data.userId);
       
-      // 3. Redirect to home
-      navigate('/');
+      // 3. Smart Redirection logic
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect') || '/';
+      navigate(redirectUrl);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed.');
     } finally {
