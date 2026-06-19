@@ -20,14 +20,24 @@ const placeOrder = async (req, res) => {
     const userId = req.headers['x-user-id'] || '00000000-0000-0000-0000-000000000000';
     const { productId, quantity, stripeToken } = req.body;
 
-    // In a real app, we would make a quick Axios call to the Inventory Service here to fetch the actual price.
-    // To keep this tutorial simple, we will pretend every item costs $50.00.
-    const totalAmount = quantity * 50;
+    // Fetch product details from Inventory Service to get the actual price
+    let productPrice;
+    try {
+      const inventoryUrl = process.env.INVENTORY_SERVICE_URL || 'http://localhost:3002';
+      const inventoryResponse = await axios.get(`${inventoryUrl}/api/inventory/${productId}`);
+      productPrice = inventoryResponse.data.price;
+    } catch (inventoryError) {
+      console.error('[Order] Failed to fetch product from Inventory Service:', inventoryError.message);
+      return res.status(404).json({ error: 'Product not found or Inventory Service unavailable' });
+    }
+
+    const totalAmount = quantity * productPrice;
 
     // --- NEW SYNCHRONOUS PAYMENT LOGIC ---
     try {
       console.log(`[Order] Processing payment of $${totalAmount} via Payment Service...`);
-      const paymentResponse = await axios.post('http://localhost:3004/api/payments/charge', {
+      const paymentUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
+      const paymentResponse = await axios.post(`${paymentUrl}/api/payments/charge`, {
         amount: totalAmount,
         source: stripeToken
       });
@@ -46,7 +56,7 @@ const placeOrder = async (req, res) => {
       userId,
       productId,
       quantity,
-      status: 'COMPLETED' // Since payment is complete, we skip PENDING
+      status: 'COMPLETED'
     });
 
     // 2. Drop a tiny JSON message into the RabbitMQ Post Office for inventory fulfillment

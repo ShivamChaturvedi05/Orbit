@@ -7,8 +7,8 @@ const orderRoutes = require('./routes/order.routes');
 const app = express();
 app.use(express.json());
 
-// Routes
-app.use('/api/orders', orderRoutes);
+// Routes (The API Gateway strips /api/orders, so we just listen on the root)
+app.use('/', orderRoutes);
 
 const PORT = process.env.PORT || 3003;
 
