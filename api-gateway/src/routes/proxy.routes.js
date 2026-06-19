@@ -13,19 +13,25 @@ router.use('/api/users', createProxyMiddleware({
 router.use('/api/inventory/public', createProxyMiddleware({
   target: 'http://localhost:3002',
   changeOrigin: true,
-  pathRewrite: { '^/api/inventory/public': '' },
+  pathRewrite: { '^/': '/api/inventory/' },
 }));
 
 router.use('/api/inventory/secure', authenticateToken, createProxyMiddleware({
   target: 'http://localhost:3002',
   changeOrigin: true,
-  pathRewrite: { '^/api/inventory/secure': '' },
+  pathRewrite: { '^/': '/api/inventory/' },
 }));
 
 router.use('/api/orders', authenticateToken, createProxyMiddleware({
   target: 'http://localhost:3003',
   changeOrigin: true,
-  // No pathRewrite needed because Order Service is listening on /api/orders
+  pathRewrite: { '^/': '/api/orders/' }
+}));
+
+router.use('/api/payments', authenticateToken, createProxyMiddleware({
+  target: 'http://localhost:3004',
+  changeOrigin: true,
+  pathRewrite: { '^/': '/api/payments/' }
 }));
 
 module.exports = router;
