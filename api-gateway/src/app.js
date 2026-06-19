@@ -7,7 +7,7 @@ const proxyRoutes = require('./routes/proxy.routes');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(rateLimiter);
 
 app.use('/', proxyRoutes);
