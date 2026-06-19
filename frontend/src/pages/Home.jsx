@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
-import { Search as SearchIcon, ArrowRight } from 'lucide-react';
+import api from '../api';
+import { Search as SearchIcon, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 
 const Home = () => {
   const [query, setQuery] = useState('');
@@ -11,13 +12,14 @@ const Home = () => {
   const [error, setError] = useState('');
   
   const { isAuthenticated } = useContext(AuthContext);
+  const { addToCart } = useContext(CartContext);
   const navigate = useNavigate();
 
   // Load all products when the page first opens!
   useEffect(() => {
     const fetchAllProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/inventory/public/');
+        const res = await api.get('/api/inventory/public');
         setResults(res.data);
       } catch (err) {
         console.error("Failed to load initial products");
@@ -44,7 +46,7 @@ const Home = () => {
     
     try {
       // Connect to the API Gateway's public inventory route!
-      const res = await axios.get(`http://localhost:3000/api/inventory/public/search?query=${encodeURIComponent(query)}`);
+      const res = await api.get(`/api/inventory/public/search?query=${encodeURIComponent(query)}`);
       setResults(res.data); // The API returns the array directly!
     } catch (err) {
       setError('Failed to fetch AI results. Is the Inventory Service running?');
@@ -115,12 +117,15 @@ const Home = () => {
                 </div>
                 
                 <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-100/50">
-                  <div className="text-3xl font-bold tracking-tight">${item.price}</div>
+                  <div className="flex flex-col">
+                    <div className="text-3xl font-bold tracking-tight">${item.price}</div>
+                    <div className="text-xs text-gray-400 mt-1">{item.stockQuantity} in stock</div>
+                  </div>
                   <button 
-                    onClick={() => handleBuyClick(item._id)}
-                    className="flex items-center text-apple-blue font-semibold hover:text-blue-700 transition-colors group bg-apple-blue/10 px-4 py-2 rounded-full"
+                    onClick={() => addToCart(item)}
+                    className="flex items-center text-white font-semibold bg-apple-blue hover:bg-blue-600 transition-colors px-5 py-2.5 rounded-full shadow-md active:scale-95"
                   >
-                    Buy Now <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    Add to Cart <ShoppingCart className="ml-2 h-4 w-4" />
                   </button>
                 </div>
               </div>
