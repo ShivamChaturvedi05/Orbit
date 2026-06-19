@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
@@ -18,10 +18,13 @@ const Login = () => {
     setError('');
     try {
       // Sending a POST request directly to your API Gateway!
-      const res = await axios.post('http://localhost:3000/api/users/login', { email, password });
-      
-      // If successful, save the JWT token globally
-      login(res.data.token, res.data.userId);
+      const res = await api.post('/api/users/login', {
+        email,
+        password,
+      });
+
+      // Pass token, refreshToken, and userId
+      login(res.data.token, res.data.refreshToken, res.data.userId);
       
       // Smart Redirection logic: Check if there is a 'redirect' in the URL
       const urlParams = new URLSearchParams(window.location.search);

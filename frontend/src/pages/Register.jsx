@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 const Register = () => {
@@ -18,10 +18,10 @@ const Register = () => {
     setError('');
     try {
       // 1. Register the user (which automatically returns a token!)
-      const res = await axios.post('http://localhost:3000/api/users/register', { email, password });
+      const res = await api.post('/api/users/register', { email, password });
       
       // 2. Automatically log them in globally
-      login(res.data.token, res.data.userId);
+      login(res.data.token, res.data.refreshToken, res.data.userId);
       
       // 3. Smart Redirection logic
       const urlParams = new URLSearchParams(window.location.search);
