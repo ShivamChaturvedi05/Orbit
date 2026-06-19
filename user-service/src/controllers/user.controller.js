@@ -84,7 +84,7 @@ const loginUser = async (req, res, next) => {
     );
     await RefreshToken.create({ token: refreshToken, UserId: user.id });
 
-    res.json({ message: 'Login successful', token, refreshToken });
+    res.json({ message: 'Login successful', userId: user.id, token, refreshToken });
   } catch (error) {
     next(error);
   }
