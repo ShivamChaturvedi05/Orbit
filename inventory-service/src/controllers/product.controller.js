@@ -16,7 +16,7 @@ const getEmbedding = async (text) => {
   }
 };
 
-// --- 1. Create Product (with AI Embedding) ---
+// --- 1. Create Product ---
 exports.createProduct = async (req, res, next) => {
   try {
     const { name, description, price, category } = req.body;
@@ -38,23 +38,32 @@ exports.createProduct = async (req, res, next) => {
   }
 };
 
-// --- 2. Get All Products (Cache-Aside Pattern) ---
+// --- 2. Get All Products (Cache-Aside Pattern with Pagination) ---
 exports.getProducts = async (req, res, next) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const cacheKey = `products_page_${page}_limit_${limit}`;
+
     // Check Redis first
-    const cachedProducts = await redisClient.get('all_products');
+    const cachedProducts = await redisClient.get(cacheKey);
 
     if (cachedProducts) {
-      console.log('⚡ Redis Cache HIT');
+      console.log('⚡ Redis Cache HIT for', cacheKey);
       return res.json(JSON.parse(cachedProducts));
     }
 
-    console.log('Redis Cache MISS. Fetching from MongoDB...');
+    console.log(`Redis Cache MISS for ${cacheKey}. Fetching from MongoDB...`);
     // If not in cache, fetch from MongoDB (ignoring the massive embedding array to save bandwidth)
-    const products = await Product.find().select('-embedding');
+    const products = await Product.find()
+      .select('-embedding')
+      .skip(skip)
+      .limit(limit);
 
     // Save to Redis for 60 seconds (Time To Live)
-    await redisClient.setEx('all_products', 60, JSON.stringify(products));
+    await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
 
     res.json(products);
   } catch (error) {
@@ -80,7 +89,7 @@ exports.searchProducts = async (req, res, next) => {
           "path": "embedding",
           "queryVector": queryEmbedding,
           "numCandidates": 100, // Look at 100 closest
-          "limit": 5            // Return the top 5
+          "limit": 10          // Return the top limit
         }
       },
       {
