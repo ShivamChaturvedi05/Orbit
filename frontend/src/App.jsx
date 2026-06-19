@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Checkout from './pages/Checkout';
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
-            {/* The Checkout page will be built in Step 5 */}
+            <Route path="checkout/:id" element={<Checkout />} />
           </Route>
         </Routes>
       </BrowserRouter>
