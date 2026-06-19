@@ -11,16 +11,9 @@ const Order = sequelize.define('Order', {
     type: DataTypes.UUID,
     allowNull: false,
   },
-  productId: {
-    type: DataTypes.STRING, // MongoDB IDs are strings
+  items: {
+    type: DataTypes.JSONB,
     allowNull: false,
-  },
-  quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
-      min: 1
-    }
   },
   status: {
     type: DataTypes.ENUM('PENDING', 'COMPLETED', 'FAILED'),

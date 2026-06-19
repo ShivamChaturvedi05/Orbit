@@ -12,8 +12,8 @@ const connectDB = async () => {
     await sequelize.authenticate();
     console.log('PostgreSQL Connected for Order Service...');
 
-    // Auto-create the Orders table if it doesn't exist
-    await sequelize.sync();
+    // Auto-create or alter the Orders table
+    await sequelize.sync({ alter: true });
   } catch (error) {
     console.error('Unable to connect to PostgreSQL:', error);
     process.exit(1);
