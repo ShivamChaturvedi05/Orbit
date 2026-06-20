@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Checkout from './pages/Checkout';
 import Dashboard from './pages/Dashboard';
+import Sell from './pages/Sell';
+import SellerDashboard from './pages/SellerDashboard';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useContext(AuthContext);
@@ -38,6 +40,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="sell" 
+                element={
+                  <ProtectedRoute>
+                    <Sell />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="seller-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <SellerDashboard />
                   </ProtectedRoute>
                 } 
               />
