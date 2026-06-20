@@ -16,21 +16,20 @@ const getEmbedding = async (text) => {
   }
 };
 
-// --- 1. Create Product ---
+// --- 1. Create Product (with AI Embedding) ---
 exports.createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, imgUrl, stockQuantity } = req.body;
+    const sellerId = req.headers['x-user-id'] || 'Orbit Official';
 
     // Call Gemini to understand the product
     const embedding = await getEmbedding(`${name} - ${description}`);
 
     // Save to MongoDB
     const newProduct = await Product.create({
-      name, description, price, category, embedding
+      name, description, price, category, imgUrl, embedding, sellerId, stockQuantity: stockQuantity ? parseInt(stockQuantity) : 100
     });
 
-    // Invalidate Redis cache because the product list changed!
-    await redisClient.del('all_products');
 
     res.status(201).json({ message: 'Product created with AI embedding', product: newProduct });
   } catch (error) {
@@ -112,6 +111,44 @@ exports.getProductById = async (req, res, next) => {
       return res.status(404).json({ error: 'Product not found' });
     }
     res.json(product);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- 5. Get Seller Products ---
+exports.getSellerProducts = async (req, res, next) => {
+  try {
+    const sellerId = req.headers['x-user-id'];
+    if (!sellerId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const products = await Product.find({ sellerId }).select('-embedding').sort({ createdAt: -1 });
+    res.json(products);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- 6. Update Seller Product ---
+exports.updateSellerProduct = async (req, res, next) => {
+  try {
+    const sellerId = req.headers['x-user-id'];
+    if (!sellerId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { id } = req.params;
+    const { price, stockQuantity } = req.body;
+
+    const product = await Product.findOneAndUpdate(
+      { _id: id, sellerId: sellerId }, // Strictly ensure the seller owns it!
+      { price: parseFloat(price), stockQuantity: parseInt(stockQuantity) },
+      { new: true }
+    ).select('-embedding');
+
+    if (!product) return res.status(404).json({ error: 'Product not found or unauthorized' });
+
+    // Since we updated a product, we should ideally invalidate cache, but for Eventual Consistency,
+    // we can skip it or let TTL handle it.
+    res.json({ message: 'Product updated', product });
   } catch (error) {
     next(error);
   }
