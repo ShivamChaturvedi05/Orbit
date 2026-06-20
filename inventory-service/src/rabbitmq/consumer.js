@@ -19,10 +19,10 @@ const startRabbitMQConsumer = async () => {
           
           const { productId, quantity } = orderData;
           
-          // Deduct from stock
+          // Deduct from stock and increment salesCount atomically
           const product = await Product.findByIdAndUpdate(
             productId, 
-            { $inc: { stockQuantity: -quantity } },
+            { $inc: { stockQuantity: -quantity, salesCount: quantity } },
             { new: true } // Returns the newly updated document
           );
 
