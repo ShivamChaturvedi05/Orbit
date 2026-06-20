@@ -27,6 +27,12 @@ const Navbar = () => {
         <button className="hover:scale-110 transition-transform">
           <Search size={20} strokeWidth={2.5} />
         </button>
+
+        {isAuthenticated && (
+          <Link to="/seller-dashboard" className="text-sm font-bold text-apple-blue hover:text-blue-600 transition-colors">
+            Seller Hub
+          </Link>
+        )}
         
         <Link to={isAuthenticated ? "/dashboard" : "/login"} className="hover:scale-110 transition-transform">
           <User size={20} strokeWidth={2.5} />
