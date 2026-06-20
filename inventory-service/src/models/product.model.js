@@ -22,9 +22,21 @@ const productSchema = new mongoose.Schema({
     type: [Number],
     required: false,
   },
+  imgUrl: {
+    type: String,
+    required: false,
+  },
+  sellerId: {
+    type: String,
+    default: 'Orbit Official',
+  },
   stockQuantity: {
     type: Number,
-    default: 100, // We will just pretend every item has 100 units in stock for now
+    default: 100, // We pretend every item has 100 units in stock for now
+  },
+  salesCount: {
+    type: Number,
+    default: 0,
   }
 }, { timestamps: true });
 
