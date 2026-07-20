@@ -119,4 +119,34 @@ const getUserOrders = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, getUserOrders };
+const verifyPurchase = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.headers['x-user-id'];
+
+    const targetUserId = userId || req.query.userId;
+
+    if (!targetUserId) {
+      return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+    }
+
+    const orders = await Order.findAll({
+      where: { userId: targetUserId, status: 'COMPLETED' }
+    });
+
+    let hasPurchased = false;
+    for (const order of orders) {
+      if (order.items && order.items.some(item => item.productId === productId)) {
+        hasPurchased = true;
+        break;
+      }
+    }
+
+    return res.status(200).json({ hasPurchased });
+  } catch (error) {
+    console.error('Error verifying purchase:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+module.exports = { placeOrder, getUserOrders, verifyPurchase };
