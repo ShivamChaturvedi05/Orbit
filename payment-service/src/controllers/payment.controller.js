@@ -1,4 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { addTransferJob } = require('../queues/transferQueue');
 
 const processPayment = async (req, res) => {
   try {
@@ -16,33 +17,18 @@ const processPayment = async (req, res) => {
       transfer_group: `ORDER_${Date.now()}`
     });
 
-    const userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-
+    // Enqueue asynchronous jobs to process split payments
     for (const item of items) {
       if (item.sellerId && item.sellerId !== 'Orbit Official') {
-        try {
-          // Fetch the seller's Stripe Account ID from User Service
-          const userRes = await axios.get(`${userServiceUrl}/${item.sellerId}/stripe-account`);
-          const stripeAccountId = userRes.data.stripeAccountId;
-
-          if (stripeAccountId) {
-            // Calculate 90% seller cut
-            const sellerCut = Math.round(item.price * item.quantity * 0.9 * 100);
-
-            await stripe.transfers.create({
-              amount: sellerCut,
-              currency,
-              destination: stripeAccountId,
-              transfer_group: charge.transfer_group,
-              source_transaction: charge.id
-            });
-            console.log(`[Stripe Connect] Transferred $${(sellerCut / 100).toFixed(2)} to ${stripeAccountId}`);
-          } else {
-            console.log(`[Stripe Connect] Seller ${item.sellerId} has no Stripe account. Platform keeps funds.`);
-          }
-        } catch (err) {
-          console.error(`[Stripe Connect] Failed to transfer to seller ${item.sellerId}`, err.message);
-        }
+        await addTransferJob({
+          sellerId: item.sellerId,
+          price: item.price,
+          quantity: item.quantity,
+          chargeId: charge.id,
+          transferGroup: charge.transfer_group,
+          currency: currency
+        });
+        console.log(`[Checkout] Enqueued transfer job for seller ${item.sellerId}`);
       }
     }
 

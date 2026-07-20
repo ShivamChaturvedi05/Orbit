@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const paymentRoutes = require('./routes/payment.routes');
-
+require('./workers/transferWorker');
 const app = express();
 app.use(express.json());
 
