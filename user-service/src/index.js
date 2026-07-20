@@ -9,8 +9,8 @@ const startServer = async () => {
   await connectDB();
   
   try {
-    // Sync models (creates tables automatically if they don't exist)
-    await sequelize.sync();
+    // Sync models (creates tables automatically if they don't exist, and updates columns)
+    await sequelize.sync({ alter: true });
     console.log('Database synced successfully.');
   } catch (error) {
     console.error('Error syncing database:', error);

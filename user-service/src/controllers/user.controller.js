@@ -129,9 +129,40 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
+const updateStripeAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { stripeAccountId } = req.body;
+    
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.stripeAccountId = stripeAccountId;
+    await user.save();
+    
+    res.json({ message: 'Stripe account updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserStripeAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    res.json({ stripeAccountId: user.stripeAccountId });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   refreshUserToken,
-  logoutUser
+  logoutUser,
+  updateStripeAccount,
+  getUserStripeAccount
 };

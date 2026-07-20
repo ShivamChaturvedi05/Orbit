@@ -15,6 +15,10 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  stripeAccountId: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 });
 
