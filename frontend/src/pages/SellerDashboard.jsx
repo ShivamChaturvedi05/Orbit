@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { Package, TrendingUp, DollarSign, Edit2, Check, X } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const SellerDashboard = () => {
+  const { userId } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,10 +14,24 @@ const SellerDashboard = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ price: '', stockQuantity: '' });
   const [saving, setSaving] = useState(false);
+  
+  const [stripeAccountId, setStripeAccountId] = useState(null);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    if (userId) {
+      fetchStripeStatus();
+    }
+  }, [userId]);
+
+  const fetchStripeStatus = async () => {
+    try {
+      const res = await api.get(`/api/users/${userId}/stripe-account`);
+      setStripeAccountId(res.data.stripeAccountId);
+    } catch (err) {
+      console.error('Failed to fetch stripe status', err);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -80,12 +96,39 @@ const SellerDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Seller Hub</h1>
             <p className="text-gray-500 mt-1">Manage your inventory and track your sales.</p>
           </div>
-          <Link 
-            to="/sell" 
-            className="bg-apple-blue text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-md text-center"
-          >
-            + Add New Product
-          </Link>
+          <div className="flex space-x-4">
+            {stripeAccountId ? (
+              <button 
+                disabled
+                className="bg-green-50 text-green-600 border-2 border-green-200 px-6 py-3 rounded-xl font-bold flex items-center cursor-default"
+                title={`Connected to ${stripeAccountId}`}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                Bank Connected
+              </button>
+            ) : (
+              <button 
+                onClick={async () => {
+                  try {
+                    const res = await api.post('/api/payments/onboard');
+                    window.location.href = res.data.url;
+                  } catch (err) {
+                    alert('Failed to connect bank account.');
+                  }
+                }}
+                className="bg-white text-apple-blue border-2 border-apple-blue px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-sm flex items-center"
+              >
+                <DollarSign className="w-5 h-5 mr-2" />
+                Connect Bank Account
+              </button>
+            )}
+            <Link 
+              to="/sell" 
+              className="bg-apple-blue text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-md text-center flex items-center"
+            >
+              + Add New Product
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
