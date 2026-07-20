@@ -3,6 +3,7 @@ services:
   - type: web
     name: orbit-api-gateway
     env: node
+    plan: free
     rootDir: api-gateway
     buildCommand: npm install
     startCommand: npm start
@@ -24,6 +25,7 @@ services:
   - type: web
     name: orbit-user-service
     env: node
+    plan: free
     rootDir: user-service
     buildCommand: npm install
     startCommand: npm start
@@ -43,6 +45,7 @@ services:
   - type: web
     name: orbit-inventory-service
     env: node
+    plan: free
     rootDir: inventory-service
     buildCommand: npm install
     startCommand: npm start
@@ -58,6 +61,7 @@ services:
   - type: web
     name: orbit-order-service
     env: node
+    plan: free
     rootDir: order-service
     buildCommand: npm install
     startCommand: npm start
@@ -75,6 +79,7 @@ services:
   - type: web
     name: orbit-payment-service
     env: node
+    plan: free
     rootDir: payment-service
     buildCommand: npm install
     startCommand: npm start
