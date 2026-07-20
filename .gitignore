@@ -139,3 +139,6 @@ dist
 # Docker volumes (if any local folders were mapped)
 postgres-data/
 mongo-data/
+
+
+database
