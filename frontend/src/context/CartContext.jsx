@@ -1,17 +1,48 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import api from '../api';
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(() => {
-    const saved = localStorage.getItem('orbit_cart');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { userId, isAuthenticated } = useContext(AuthContext);
+  const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // 1. Load cart on mount or login
   useEffect(() => {
-    localStorage.setItem('orbit_cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    const loadCart = async () => {
+      if (isAuthenticated && userId) {
+        try {
+          const res = await api.get(`/api/users/${userId}/cart`);
+          setCartItems(res.data.cart || []);
+        } catch (err) {
+          console.error("Failed to load cloud cart", err);
+        }
+      } else {
+        const saved = localStorage.getItem('orbit_cart');
+        setCartItems(saved ? JSON.parse(saved) : []);
+      }
+      setIsInitialized(true);
+    };
+    loadCart();
+  }, [isAuthenticated, userId]);
+
+  // 2. Sync cart to Cloud or LocalStorage whenever it changes
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    if (isAuthenticated && userId) {
+      // Sync to cloud
+      api.put(`/api/users/${userId}/cart`, { cart: cartItems }).catch(err => {
+        console.error("Failed to sync cart to cloud", err);
+      });
+    } else {
+      // Sync to local storage
+      localStorage.setItem('orbit_cart', JSON.stringify(cartItems));
+    }
+  }, [cartItems, isAuthenticated, userId, isInitialized]);
 
   const addToCart = (product, quantity = 1) => {
     setCartItems(prev => {
@@ -61,7 +92,12 @@ export const CartProvider = ({ children }) => {
     }));
   };
 
-  const clearCart = () => setCartItems([]);
+  const clearCart = () => {
+    setCartItems([]);
+    if (isAuthenticated && userId) {
+      api.delete(`/api/users/${userId}/cart`).catch(err => console.error("Failed to clear cloud cart", err));
+    }
+  };
 
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
