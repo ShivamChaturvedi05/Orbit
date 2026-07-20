@@ -45,7 +45,8 @@ const placeOrder = async (req, res) => {
           name: product.name,
           imgUrl: product.imgUrl,
           quantity: item.quantity,
-          price: price
+          price: price,
+          sellerId: product.sellerId
         });
       }
     } catch (inventoryError) {
@@ -59,7 +60,8 @@ const placeOrder = async (req, res) => {
       const paymentUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
       const paymentResponse = await axios.post(`${paymentUrl}/api/payments/charge`, {
         amount: totalAmount,
-        source: stripeToken
+        source: stripeToken,
+        items: itemsWithPrices
       });
       console.log(`[Order] Payment Successful! Charge ID: ${paymentResponse.data.chargeId}`);
     } catch (paymentError) {
