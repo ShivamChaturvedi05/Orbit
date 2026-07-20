@@ -1,0 +1,93 @@
+services:
+  # 1. API Gateway
+  - type: web
+    name: orbit-api-gateway
+    env: node
+    rootDir: api-gateway
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        sync: false
+      - key: USER_SERVICE_URL
+        value: https://orbit-user-service.onrender.com
+      - key: INVENTORY_SERVICE_URL
+        value: https://orbit-inventory-service.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://orbit-order-service.onrender.com
+      - key: PAYMENT_SERVICE_URL
+        value: https://orbit-payment-service.onrender.com
+
+  # 2. User Service
+  - type: web
+    name: orbit-user-service
+    env: node
+    rootDir: user-service
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+
+  # 3. Inventory Service
+  - type: web
+    name: orbit-inventory-service
+    env: node
+    rootDir: inventory-service
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3002
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # 4. Order Service
+  - type: web
+    name: orbit-order-service
+    env: node
+    rootDir: order-service
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3003
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+
+  # 5. Payment Service
+  - type: web
+    name: orbit-payment-service
+    env: node
+    rootDir: payment-service
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3004
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: USER_SERVICE_URL
+        value: https://orbit-user-service.onrender.com
+      - key: FRONTEND_URL
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
