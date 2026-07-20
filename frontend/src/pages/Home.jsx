@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import api from '../api';
-import { Search as SearchIcon, ShoppingCart, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, ShoppingCart, Loader2, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -96,16 +96,13 @@ const Home = () => {
   return (
     <div className="pb-20">
       {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center pt-24 pb-16 text-center animate-fade-in">
-        <h1 className="text-6xl font-bold tracking-tighter mb-6 text-apple-dark">
-          Find exactly what you mean.
+      <div className="text-center max-w-4xl mx-auto mb-20 animate-fade-in-up pt-24">
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-gray-900 mb-6 drop-shadow-sm">
+          Orbit
         </h1>
-        <p className="text-xl text-gray-500 max-w-2xl mb-12 font-light">
-          Powered by Gemini AI Embeddings. Try searching for abstract concepts like "gadgets to listen to music" instead of exact keywords.
-        </p>
 
         {/* Massive Search Bar */}
-        <form onSubmit={handleSearch} className="w-full max-w-3xl relative group">
+        <form onSubmit={handleSearch} className="w-full max-w-3xl relative group mx-auto">
           <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
             <SearchIcon className="h-6 w-6 text-gray-400 group-focus-within:text-apple-blue transition-colors" />
           </div>
@@ -143,8 +140,9 @@ const Home = () => {
             return (
               <div
                 key={item._id}
-                ref={isLast ? lastProductElementRef : null} // Attach observer to the very last card
-                className="glass-card flex flex-col overflow-hidden hover:scale-[1.02] hover:shadow-xl transition-all cursor-default"
+                ref={isLast ? lastProductElementRef : null}
+                className="glass-card flex flex-col overflow-hidden hover:scale-[1.02] hover:shadow-xl transition-all cursor-pointer"
+                onClick={() => navigate(`/product/${item._id}`)}
               >
 
                 {/* Product Image - WITH LAZY LOADING */}
@@ -160,10 +158,21 @@ const Home = () => {
                 {/* Product Details */}
                 <div className="p-8 flex flex-col flex-grow">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-apple-blue mb-3 block">
+                    <span className="text-xs font-bold uppercase tracking-wider text-apple-blue mb-2 block">
                       {item.category || 'Tech'}
                     </span>
-                    <h3 className="text-xl font-bold mb-3 tracking-tight line-clamp-2">{item.name}</h3>
+                    <h3 className="text-xl font-bold mb-2 tracking-tight line-clamp-2">{item.name}</h3>
+                    <div className="flex items-center mb-3">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < Math.round(item.averageRating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-500 ml-2 font-medium">({item.reviewCount || 0})</span>
+                    </div>
                     <p className="text-gray-500 text-sm mb-6 leading-relaxed line-clamp-3">
                       {item.description}
                     </p>
@@ -175,7 +184,10 @@ const Home = () => {
                       <div className="text-xs text-gray-400 mt-1">{item.stockQuantity} in stock</div>
                     </div>
                     <button
-                      onClick={() => addToCart(item)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click from navigating when clicking Add to Cart
+                        addToCart(item);
+                      }}
                       className="flex items-center text-white font-semibold bg-apple-blue hover:bg-blue-600 transition-colors px-5 py-2.5 rounded-full shadow-md active:scale-95"
                     >
                       Add to Cart <ShoppingCart className="ml-2 h-4 w-4" />

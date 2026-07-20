@@ -10,6 +10,7 @@ import Checkout from './pages/Checkout';
 import Dashboard from './pages/Dashboard';
 import Sell from './pages/Sell';
 import SellerDashboard from './pages/SellerDashboard';
+import ProductDetails from './pages/ProductDetails';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useContext(AuthContext);
@@ -27,6 +28,7 @@ function App() {
               <Route index element={<Home />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
+              <Route path="product/:id" element={<ProductDetails />} />
               <Route 
                 path="checkout" 
                 element={

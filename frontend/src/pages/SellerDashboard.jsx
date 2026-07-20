@@ -26,8 +26,13 @@ const SellerDashboard = () => {
 
   const fetchStripeStatus = async () => {
     try {
-      const res = await api.get(`/api/users/${userId}/stripe-account`);
-      setStripeAccountId(res.data.stripeAccountId);
+      // We now call the payment service to verify the ACTUAL Stripe account status
+      const res = await api.get(`/api/payments/account-status`);
+      if (res.data.connected) {
+        setStripeAccountId(res.data.stripeAccountId);
+      } else {
+        setStripeAccountId(null);
+      }
     } catch (err) {
       console.error('Failed to fetch stripe status', err);
     }

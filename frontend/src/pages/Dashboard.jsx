@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Package, Calendar, DollarSign, LogOut } from 'lucide-react';
+import { Package, Calendar, DollarSign, LogOut, Star, X, Loader2 } from 'lucide-react';
 import api from '../api';
 
 const Dashboard = () => {
@@ -8,6 +8,15 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Review Modal State
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewingProduct, setReviewingProduct] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -32,6 +41,38 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const openReviewModal = (product) => {
+    setReviewingProduct(product);
+    setRating(5);
+    setComment('');
+    setReviewError('');
+    setReviewSuccess('');
+    setReviewModalOpen(true);
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    setReviewLoading(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      await api.post(`/api/inventory/secure/${reviewingProduct.productId}/reviews`, {
+        rating,
+        comment,
+        reviewerName: 'Orbit Customer'
+      });
+      setReviewSuccess('Review submitted successfully!');
+      setTimeout(() => {
+        setReviewModalOpen(false);
+      }, 2000);
+    } catch (err) {
+      setReviewError(err.response?.data?.error || 'Failed to submit review');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   return (
     <div className="pt-24 min-h-screen bg-gray-50 pb-12">
@@ -127,6 +168,14 @@ const Dashboard = () => {
                               </div>
                               <p className="mt-1 text-sm text-gray-500">Qty: {item.quantity}</p>
                             </div>
+                            <div className="mt-4 sm:mt-0 sm:ml-4">
+                              <button
+                                onClick={() => openReviewModal(item)}
+                                className="text-sm text-apple-blue font-medium hover:underline flex items-center"
+                              >
+                                <Star className="h-4 w-4 mr-1" /> Write a Review
+                              </button>
+                            </div>
                           </div>
                         </li>
                       ))}
@@ -138,6 +187,64 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      {reviewModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative animate-fade-in-up">
+            <button 
+              onClick={() => setReviewModalOpen(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            
+            <h2 className="text-2xl font-bold mb-2">Write a Review</h2>
+            <p className="text-gray-500 mb-6 line-clamp-1">{reviewingProduct?.name}</p>
+
+            {reviewError && <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm font-medium">{reviewError}</div>}
+            {reviewSuccess && <div className="bg-green-50 text-green-600 p-3 rounded-xl mb-4 text-sm font-medium">{reviewSuccess}</div>}
+
+            <form onSubmit={submitReview} className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Rating</label>
+                <div className="flex space-x-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => setRating(star)}
+                      className="focus:outline-none transition-transform hover:scale-110"
+                    >
+                      <Star className={`h-8 w-8 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Your Review</label>
+                <textarea
+                  required
+                  rows="4"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-apple-blue focus:border-apple-blue transition-colors resize-none"
+                  placeholder="What did you like or dislike?"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={reviewLoading || !!reviewSuccess}
+                className="w-full bg-apple-dark text-white py-4 rounded-xl font-bold hover:bg-black transition-colors disabled:opacity-50 flex justify-center items-center"
+              >
+                {reviewLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Submit Review'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
