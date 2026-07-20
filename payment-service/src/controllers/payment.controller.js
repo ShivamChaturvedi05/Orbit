@@ -54,26 +54,39 @@ const onboardSeller = async (req, res) => {
     const userId = req.headers['x-user-id'];
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    // Create a new connected account
-    const account = await stripe.accounts.create({
-      type: 'express',
-    });
+    const userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+    let stripeAccountId = null;
 
-    // Save the account ID in the user-service
+    // 1. Try to get existing stripeAccountId from user-service
     try {
-      const userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-      await axios.put(`${userServiceUrl}/${userId}/stripe-account`, {
-        stripeAccountId: account.id
-      });
+      const userRes = await axios.get(`${userServiceUrl}/${userId}/stripe-account`);
+      stripeAccountId = userRes.data.stripeAccountId;
     } catch (err) {
-      console.error('[Payment] Failed to save Stripe Account to User Service', err);
-      return res.status(500).json({ error: 'Failed to link account' });
+      console.error('[Payment] Could not fetch existing stripe account', err.message);
     }
 
-    // Create an account link for onboarding
+    // 2. If they don't have one, create a new connected account
+    if (!stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+      });
+      stripeAccountId = account.id;
+
+      // Save the new account ID in the user-service
+      try {
+        await axios.put(`${userServiceUrl}/${userId}/stripe-account`, {
+          stripeAccountId
+        });
+      } catch (err) {
+        console.error('[Payment] Failed to save Stripe Account to User Service', err.message);
+        return res.status(500).json({ error: 'Failed to link account' });
+      }
+    }
+
+    // 3. Create an account link for onboarding (resumes existing or starts new)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const accountLink = await stripe.accountLinks.create({
-      account: account.id,
+      account: stripeAccountId,
       refresh_url: `${frontendUrl}/seller-dashboard?error=refresh`,
       return_url: `${frontendUrl}/seller-dashboard?success=true`,
       type: 'account_onboarding',
@@ -86,4 +99,32 @@ const onboardSeller = async (req, res) => {
   }
 };
 
-module.exports = { processPayment, onboardSeller };
+const checkAccountStatus = async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    // 1. Get stripeAccountId from user-service
+    const userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+    const userRes = await axios.get(`${userServiceUrl}/${userId}/stripe-account`);
+    const stripeAccountId = userRes.data.stripeAccountId;
+
+    if (!stripeAccountId) {
+      return res.json({ connected: false });
+    }
+
+    // 2. Check actual status
+    const account = await stripe.accounts.retrieve(stripeAccountId);
+
+    if (account.charges_enabled && account.details_submitted) {
+      return res.json({ connected: true, stripeAccountId });
+    } else {
+      return res.json({ connected: false, stripeAccountId, pending: true });
+    }
+  } catch (error) {
+    console.error('[Stripe Status Check Error]', error.message);
+    res.status(500).json({ error: 'Failed to check account status' });
+  }
+};
+
+module.exports = { processPayment, onboardSeller, checkAccountStatus };
