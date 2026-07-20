@@ -37,6 +37,14 @@ const productSchema = new mongoose.Schema({
   salesCount: {
     type: Number,
     default: 0,
+  },
+  averageRating: {
+    type: Number,
+    default: 0,
+  },
+  reviewCount: {
+    type: Number,
+    default: 0,
   }
 }, { timestamps: true });
 
