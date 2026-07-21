@@ -4,30 +4,27 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key');
 
-// Helper function to get Vector Embedding from Gemini
 const getEmbedding = async (text) => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
     const result = await model.embedContent(text);
-    return result.embedding.values; // Returns an array of numbers
+    return result.embedding.values;
   } catch (error) {
     console.error('Gemini API Error:', error);
-    return null; // Fallback if API fails
+    return null;
   }
 };
 
-// --- 1. Create Product (with AI Embedding) ---
-exports.createProduct = async (req, res, next) => {
+const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, category, imgUrl, stockQuantity } = req.body;
     const sellerId = req.headers['x-user-id'] || 'Orbit Official';
 
-    // Call Gemini to understand the product
     const embedding = await getEmbedding(`${name} - ${description}`);
 
     // Save to MongoDB
     const newProduct = await Product.create({
-      name, description, price, category, imgUrl, embedding, sellerId, stockQuantity: stockQuantity ? parseInt(stockQuantity) : 100
+      name, description, price, category, imgUrl, embedding, sellerId, stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0
     });
 
 
@@ -37,8 +34,7 @@ exports.createProduct = async (req, res, next) => {
   }
 };
 
-// --- 2. Get All Products (Cache-Aside Pattern with Pagination) ---
-exports.getProducts = async (req, res, next) => {
+const getProducts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -46,22 +42,19 @@ exports.getProducts = async (req, res, next) => {
 
     const cacheKey = `products_page_${page}_limit_${limit}`;
 
-    // Check Redis first
     const cachedProducts = await redisClient.get(cacheKey);
 
     if (cachedProducts) {
-      console.log('⚡ Redis Cache HIT for', cacheKey);
+      console.log('Redis Cache HIT for', cacheKey);
       return res.json(JSON.parse(cachedProducts));
     }
 
     console.log(`Redis Cache MISS for ${cacheKey}. Fetching from MongoDB...`);
-    // If not in cache, fetch from MongoDB (ignoring the massive embedding array to save bandwidth)
     const products = await Product.find()
       .select('-embedding')
       .skip(skip)
       .limit(limit);
 
-    // Save to Redis for 60 seconds (Time To Live)
     await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
 
     res.json(products);
@@ -70,29 +63,25 @@ exports.getProducts = async (req, res, next) => {
   }
 };
 
-// --- 3. Semantic Search (The ML Engine) ---
-exports.searchProducts = async (req, res, next) => {
+const searchProducts = async (req, res, next) => {
   try {
     const { query } = req.query;
     if (!query) return res.status(400).json({ error: 'Search query is required' });
 
-    // Step 1: Turn the user's search phrase into math
     const queryEmbedding = await getEmbedding(query);
     if (!queryEmbedding) return res.status(500).json({ error: 'AI processing failed' });
 
-    // Step 2: Ask MongoDB to find products mathematically similar to the query
     const results = await Product.aggregate([
       {
         "$vectorSearch": {
-          "index": "vector_index", // This index must be created in MongoDB Atlas UI
+          "index": "vector_index",
           "path": "embedding",
           "queryVector": queryEmbedding,
-          "numCandidates": 100, // Look at 100 closest
-          "limit": 10          // Return the top limit
+          "numCandidates": 100,
+          "limit": 10
         }
       },
       {
-        // Don't send the massive array back to the frontend
         "$project": { "embedding": 0 }
       }
     ]);
@@ -103,8 +92,7 @@ exports.searchProducts = async (req, res, next) => {
   }
 };
 
-// --- 4. Get Product By ID ---
-exports.getProductById = async (req, res, next) => {
+const getProductById = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id).select('-embedding');
     if (!product) {
@@ -116,8 +104,7 @@ exports.getProductById = async (req, res, next) => {
   }
 };
 
-// --- 5. Get Seller Products ---
-exports.getSellerProducts = async (req, res, next) => {
+const getSellerProducts = async (req, res, next) => {
   try {
     const sellerId = req.headers['x-user-id'];
     if (!sellerId) return res.status(401).json({ error: 'Unauthorized' });
@@ -129,8 +116,7 @@ exports.getSellerProducts = async (req, res, next) => {
   }
 };
 
-// --- 6. Update Seller Product ---
-exports.updateSellerProduct = async (req, res, next) => {
+const updateSellerProduct = async (req, res, next) => {
   try {
     const sellerId = req.headers['x-user-id'];
     if (!sellerId) return res.status(401).json({ error: 'Unauthorized' });
@@ -139,7 +125,7 @@ exports.updateSellerProduct = async (req, res, next) => {
     const { price, stockQuantity } = req.body;
 
     const product = await Product.findOneAndUpdate(
-      { _id: id, sellerId: sellerId }, // Strictly ensure the seller owns it!
+      { _id: id, sellerId: sellerId },
       { price: parseFloat(price), stockQuantity: parseInt(stockQuantity) },
       { new: true }
     ).select('-embedding');
@@ -152,4 +138,13 @@ exports.updateSellerProduct = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+module.exports = {
+  createProduct,
+  getProducts,
+  searchProducts,
+  getProductById,
+  getSellerProducts,
+  updateSellerProduct
 };
