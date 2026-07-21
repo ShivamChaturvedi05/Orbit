@@ -5,7 +5,8 @@ const getCart = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (req.user && req.user.id !== userId) {
+    const callerId = req.headers['x-user-id'];
+    if (callerId && callerId !== userId) {
       return res.status(403).json({ error: 'Unauthorized to access this cart' });
     }
 
@@ -27,7 +28,8 @@ const syncCart = async (req, res) => {
     const { userId } = req.params;
     const { cart } = req.body;
 
-    if (req.user && req.user.id !== userId) {
+    const callerId = req.headers['x-user-id'];
+    if (callerId && callerId !== userId) {
       return res.status(403).json({ error: 'Unauthorized to modify this cart' });
     }
 
@@ -49,7 +51,8 @@ const clearCart = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (req.user && req.user.id !== userId) {
+    const callerId = req.headers['x-user-id'];
+    if (callerId && callerId !== userId) {
       return res.status(403).json({ error: 'Unauthorized to modify this cart' });
     }
 
