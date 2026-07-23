@@ -111,15 +111,15 @@ graph TD
   * **BullMQ** (Intra-Service Background Jobs with Redis)
 * **Payment Gateway**: Stripe API (Charges, Transfers, Connect Express Onboarding)
 
-## 🧠 Key Enterprise Patterns Implemented
+## Key Enterprise Patterns Implemented
 
 1. **Polyglot Persistence**: Choosing the right database for the job. Postgres for strict ACID compliance (Orders/Users), Mongo for flexible schemas (Products), and Redis for high-speed ephemeral data (Carts/Queues).
 2. **Event-Driven Microservices**: Completely decoupling the Order Service from the Inventory Service using RabbitMQ. The checkout doesn't crash if the Inventory Service is temporarily offline.
-3. **Dead Letter Queues & Exponential Backoff**: Using BullMQ in the Payment Service to ensure seller payouts are never lost if the Stripe API goes down. It automatically retries failing payouts over time.
+3. **Exponential Backoff**: Using BullMQ in the Payment Service to ensure seller payouts are never lost if the Stripe API goes down. It automatically retries failing payouts over time.
 4. **Data Denormalization**: Storing exact price snapshots inside a PostgreSQL `JSONB` array at the moment of checkout, rather than using standard Foreign Keys that would dynamically alter historical receipts.
 5. **Secure Payment Flow**: Utilizing Stripe Public Keys on the frontend to generate safe tokens, ensuring raw credit card numbers never touch the Orbit Node.js backend (PCI Compliance).
 
-## 🔌 API Endpoints Reference
+## API Endpoints Reference
 
 All requests from the frontend are routed through the **API Gateway** on port `3000`.
 
