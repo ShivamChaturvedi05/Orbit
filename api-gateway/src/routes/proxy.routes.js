@@ -28,7 +28,7 @@ router.use('/api/inventory/secure', authenticateToken, createProxyMiddleware({
 router.use('/api/orders', authenticateToken, createProxyMiddleware({
   target: (process.env.ORDER_SERVICE_URL || 'http://localhost:3003').trim(),
   changeOrigin: true,
-  pathRewrite: { '^/api/orders': '/' },
+  // No pathRewrite needed because Order Service is listening on root /
   on: { error: (err, req, res) => { console.error('Proxy Error:', err); res.status(502).json({ error: 'Order Service Unavailable' }); } }
 }));
 
