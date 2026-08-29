@@ -6,6 +6,9 @@ const proxyRoutes = require('./routes/proxy.routes');
 
 const app = express();
 
+// Trust the first proxy to enable correct IP tracking for rate limiting behind a Load Balancer
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(rateLimiter);
