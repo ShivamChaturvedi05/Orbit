@@ -71,6 +71,11 @@ graph TD
     PaySvc -.->|Enqueue Seller Payout| BullMQ
     BullMQ -.->|Consume Job| Worker
     Worker -->|Asynchronous Transfer| Stripe
+
+    %% Saga Pattern Rollback Flow
+    InvSvc ==>|4a. Saga Rollback: Publish FAILED| RabbitMQ
+    RabbitMQ ==>|4b. Consume: Trigger Refund| OrderSvc
+    OrderSvc -->|4c. Saga Rollback: Process Refund| PaySvc
 ```
 
 ### 1. API Gateway (`/api-gateway`)
