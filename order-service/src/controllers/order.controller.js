@@ -20,13 +20,15 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const userId = req.headers['x-user-id'] || '00000000-0000-0000-0000-000000000000';
+    const userId = req.headers['x-user-id'];
+    if (!userId) {
+      return res.status(401).json({ error: 'You must log in to checkout!' });
+    }
     const { items, stripeToken } = req.body;
 
     let totalAmount = 0;
     const itemsWithPrices = [];
 
-    // Fetch product details from Inventory Service for each item
     try {
       const inventoryUrl = process.env.INVENTORY_SERVICE_URL || 'http://localhost:3002';
 
@@ -55,15 +57,17 @@ const placeOrder = async (req, res) => {
     }
 
     // Process payment
+    let chargeId;
     try {
       console.log(`[Order] Processing payment of $${totalAmount.toFixed(2)} via Payment Service...`);
-      const paymentUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
+      const paymentUrl = process.env.PAYMENT_SERVICE_URL || 'http://127.0.0.1:3004';
       const paymentResponse = await axios.post(`${paymentUrl}/api/payments/charge`, {
         amount: totalAmount,
         source: stripeToken,
         items: itemsWithPrices
       });
-      console.log(`[Order] Payment Successful! Charge ID: ${paymentResponse.data.chargeId}`);
+      chargeId = paymentResponse.data.chargeId;
+      console.log(`[Order] Payment Successful! Charge ID: ${chargeId}`);
     } catch (paymentError) {
       console.error('[Order] Payment Failed:', paymentError.response?.data?.error || paymentError.message);
       return res.status(402).json({
@@ -76,17 +80,16 @@ const placeOrder = async (req, res) => {
     const order = await Order.create({
       userId,
       items: itemsWithPrices,
-      status: 'COMPLETED'
+      status: 'COMPLETED',
+      chargeId: chargeId
     });
 
-    // 2. Drop a RabbitMQ message for EACH item so inventory can deduct stock
-    for (const item of itemsWithPrices) {
-      await publishOrderMessage({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity
-      });
-    }
+    // 2. Drop a single RabbitMQ message for the entire order
+    await publishOrderMessage({
+      orderId: order.id,
+      chargeId: chargeId,
+      items: itemsWithPrices
+    });
 
     // 3. Respond to the user
     res.status(201).json({

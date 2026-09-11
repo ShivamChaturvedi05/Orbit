@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { connectDB } = require('./db');
 const { connectRabbitMQ } = require('./rabbitmq/producer');
+const { startRabbitMQConsumer } = require('./rabbitmq/consumer');
 const orderRoutes = require('./routes/order.routes');
 
 const app = express();
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 3003;
 const startServer = async () => {
   await connectDB();
   await connectRabbitMQ();
+  await startRabbitMQConsumer();
 
   app.listen(PORT, () => {
     console.log(`Order Service running on port ${PORT}`);

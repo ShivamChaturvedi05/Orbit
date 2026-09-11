@@ -18,6 +18,10 @@ const Order = sequelize.define('Order', {
   status: {
     type: DataTypes.ENUM('PENDING', 'COMPLETED', 'FAILED'),
     defaultValue: 'PENDING',
+  },
+  chargeId: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 }, {
   timestamps: true,
