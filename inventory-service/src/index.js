@@ -8,8 +8,10 @@ const startServer = async () => {
   // Connect to MongoDB and Redis before starting the server
   await connectDB();
   
-  // Start the RabbitMQ Consumer to listen for incoming Orders
+  // Start the RabbitMQ Consumer and Producer
   const { startRabbitMQConsumer } = require('./rabbitmq/consumer');
+  const { connectRabbitMQ } = require('./rabbitmq/producer');
+  await connectRabbitMQ();
   await startRabbitMQConsumer();
   
   app.listen(PORT, () => {

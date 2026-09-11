@@ -12,7 +12,7 @@ const addReview = async (req, res) => {
     }
 
     // 1. Verify Purchase via Order Service
-    const orderUrl = process.env.ORDER_SERVICE_URL || 'http://localhost:3003';
+    const orderUrl = process.env.ORDER_SERVICE_URL || 'http://127.0.0.1:3003';
     try {
       const verifyRes = await fetch(`${orderUrl}/verify-purchase/${productId}?userId=${userId}`);
       if (!verifyRes.ok) {
