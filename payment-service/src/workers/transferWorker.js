@@ -9,7 +9,7 @@ const transferWorker = new Worker('transferQueue', async (job) => {
 
   console.log(`[BullMQ Worker] Processing transfer for seller ${sellerId} from charge ${chargeId}`);
 
-  const userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+  const userServiceUrl = process.env.USER_SERVICE_URL || 'http://127.0.0.1:3001';
   
   // 1. Fetch the seller's Stripe Account ID from User Service
   const userRes = await axios.get(`${userServiceUrl}/${sellerId}/stripe-account`);

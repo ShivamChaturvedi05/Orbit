@@ -47,6 +47,23 @@ const processPayment = async (req, res) => {
   }
 };
 
+const refundPayment = async (req, res) => {
+  try {
+    const { chargeId } = req.body;
+    if (!chargeId) {
+      return res.status(400).json({ error: 'chargeId is required' });
+    }
+
+    const refund = await stripe.refunds.create({ charge: chargeId });
+    
+    console.log(`[Payment] Refund successful for charge ${chargeId}`);
+    res.status(200).json({ success: true, refundId: refund.id });
+  } catch (error) {
+    console.error('[Stripe Refund Error]', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 const axios = require('axios');
 
 const onboardSeller = async (req, res) => {
@@ -127,4 +144,4 @@ const checkAccountStatus = async (req, res) => {
   }
 };
 
-module.exports = { processPayment, onboardSeller, checkAccountStatus };
+module.exports = { processPayment, onboardSeller, checkAccountStatus, refundPayment };
