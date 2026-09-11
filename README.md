@@ -115,9 +115,10 @@ graph TD
 
 1. **Polyglot Persistence**: Choosing the right database for the job. Postgres for strict ACID compliance (Orders/Users), Mongo for flexible schemas (Products), and Redis for high-speed ephemeral data (Carts/Queues).
 2. **Event-Driven Microservices**: Completely decoupling the Order Service from the Inventory Service using RabbitMQ. The checkout doesn't crash if the Inventory Service is temporarily offline.
-3. **Exponential Backoff**: Using BullMQ in the Payment Service to ensure seller payouts are never lost if the Stripe API goes down. It automatically retries failing payouts over time.
-4. **Data Denormalization**: Storing exact price snapshots inside a PostgreSQL `JSONB` array at the moment of checkout, rather than using standard Foreign Keys that would dynamically alter historical receipts.
-5. **Secure Payment Flow**: Utilizing Stripe Public Keys on the frontend to generate safe tokens, ensuring raw credit card numbers never touch the Orbit Node.js backend (PCI Compliance).
+3. **The Asynchronous Saga Pattern**: Handling distributed checkout race conditions. If the Inventory Service fails to asynchronously deduct stock after a successful payment, it uses RabbitMQ to trigger a Compensating Transaction in the Order Service to automatically refund the Stripe charge.
+4. **Exponential Backoff**: Using BullMQ in the Payment Service to ensure seller payouts are never lost if the Stripe API goes down. It automatically retries failing payouts over time.
+5. **Data Denormalization**: Storing exact price snapshots inside a PostgreSQL `JSONB` array at the moment of checkout, rather than using standard Foreign Keys that would dynamically alter historical receipts.
+6. **Secure Payment Flow**: Utilizing Stripe Public Keys on the frontend to generate safe tokens, ensuring raw credit card numbers never touch the Orbit Node.js backend (PCI Compliance).
 
 ## API Endpoints Reference
 
@@ -163,6 +164,7 @@ All requests from the frontend are routed through the **API Gateway** on port `3
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `POST` | `/api/payments/charge` | Internal: Processes Stripe Charge | Internal API |
+| `POST` | `/api/payments/refund` | Internal: Saga Rollback (Refunds a Stripe Charge) | Internal API |
 | `POST` | `/api/payments/onboard` | Generates Stripe Connect Express link | Yes |
 | `GET` | `/api/payments/account-status` | Checks Stripe Connect KYC verification status | Yes |
 
