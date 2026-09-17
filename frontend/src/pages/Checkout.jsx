@@ -12,6 +12,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 const CheckoutForm = ({ cartItems, totalAmount, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +51,11 @@ const CheckoutForm = ({ cartItems, totalAmount, onSuccess }) => {
         onSuccess(res.data.order.id);
       }
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Payment failed. Please try again.");
+      if (err.response?.status === 401) {
+        navigate('/login');
+      } else {
+        setError(err.response?.data?.error || err.message || "Payment failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

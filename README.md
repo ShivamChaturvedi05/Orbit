@@ -78,6 +78,51 @@ graph TD
     OrderSvc -->|4c. Saga Rollback: Process Refund| PaySvc
 ```
 
+### Database Schema & Interactions
+
+Orbit uses a polyglot persistence strategy. Due to the microservices architecture, there are no strict database-level foreign keys *between* different services. Instead, services interact via **Logical Foreign Keys** (e.g., storing a `userId` string in the Inventory Service's MongoDB that maps back to the User Service's PostgreSQL database).
+
+#### 1. User Service (PostgreSQL)
+Handles user authentication and profiles.
+* **User Table**
+  * `id` (UUID, Primary Key)
+  * `email` (String, Unique)
+  * `password` (String, Hashed)
+  * `stripeAccountId` (String, Nullable) - *Used for seller payouts.*
+* **RefreshToken Table**
+  * `id` (UUID, Primary Key)
+  * `token` (Text)
+
+#### 2. Inventory Service (MongoDB)
+Handles product catalog and reviews. Schema-less design allows flexible attributes.
+* **Product Collection**
+  * `_id` (ObjectId, Primary Key)
+  * `name`, `description`, `category` (String)
+  * `price` (Number)
+  * `sellerId` (String) - 🔗 **Logical Foreign Key**: Maps to `User.id` in User Service.
+  * `stockQuantity`, `salesCount`, `averageRating`, `reviewCount` (Number)
+  * `embedding` (Array of Numbers) - *For AI semantic search.*
+* **Review Collection**
+  * `_id` (ObjectId, Primary Key)
+  * `productId` (ObjectId) - 🔗 **Foreign Key**: Maps to `Product._id` (within the same DB).
+  * `userId` (String) - 🔗 **Logical Foreign Key**: Maps to `User.id` in User Service.
+  * `reviewerName`, `comment` (String)
+  * `rating` (Number, 1-5)
+  * *Note: Enforces a unique index on `productId` + `userId` (1 user = 1 review per product).*
+
+#### 3. Order Service (PostgreSQL)
+Handles checkout and historical order records.
+* **Order Table**
+  * `id` (UUID, Primary Key)
+  * `userId` (UUID) - 🔗 **Logical Foreign Key**: Maps to `User.id` in User Service.
+  * `items` (JSONB) - *Stores an immutable snapshot of products (prices, names) at checkout. This ensures historical receipts do not change even if a seller updates a product's price in the Inventory Service later.*
+  * `status` (Enum: PENDING, COMPLETED, FAILED)
+  * `chargeId` (String, Nullable) - 🔗 **Logical Foreign Key**: Maps to Stripe's Charge ID.
+
+#### 4. Caching & Queues (Redis)
+* **Cart Caching**: User Service uses Redis to store volatile Shopping Carts (Key-Value pairs).
+* **BullMQ Queues**: Payment Service uses Redis to safely enqueue seller payouts for asynchronous processing.
+
 ### 1. API Gateway (`/api-gateway`)
 * **Role**: The single entry point for the React frontend.
 * **Key Feature**: **JWT Header Propagation**. It intercepts requests, verifies JWT tokens, and injects the `x-user-id` header before routing traffic to the internal microservices. This ensures internal services are secure and never have to manually parse JWTs.
